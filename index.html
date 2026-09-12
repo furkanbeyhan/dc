@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sesli Sohbet - WebRTC P2P</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PeerJS CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- LOBBY SCREEN (Giriş Ekranı) -->
+    <div id="lobbyScreen" class="screen active">
+      <div class="lobby-card">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-7c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"/>
+            </svg>
+          </div>
+          <h1>P2P Sesli Görüşme</h1>
+          <p class="brand-desc">Sunucusuz, doğrudan eşler arası (P2P), ultra düşük gecikmeli sesli iletişim.</p>
+        </div>
+
+        <form id="joinForm" class="join-form">
+          <!-- Profil Özelleştirme Kartı -->
+          <div class="profile-setup-card">
+            <div class="profile-setup-top">
+              <div class="avatar-preview-wrapper avatar-upload-trigger" id="lobbyAvatarTrigger" title="Resim yüklemek için tıklayın">
+                <div id="lobbyAvatarPreview" class="avatar avatar-preview-box">F</div>
+                <div class="avatar-upload-overlay" title="Resim Yükle">📷</div>
+              </div>
+              <div class="profile-setup-info">
+                <div class="profile-setup-name-row">
+                  <span id="lobbyNamePreview" class="profile-setup-name">Kullanıcı</span>
+                  <span id="lobbyStatusPreview" class="profile-setup-status">Çevrimiçi</span>
+                </div>
+                <div class="avatar-actions-row">
+                  <button type="button" id="btnLobbyUploadImage" class="btn-action-sm">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                    </svg>
+                    Resim Yükle
+                  </button>
+                  <button type="button" id="btnLobbyRemoveImage" class="btn-action-sm btn-danger-action hidden" title="Profil Resmini Kaldır">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                    Kaldır
+                  </button>
+                </div>
+              </div>
+              <input type="file" id="lobbyAvatarFile" accept="image/*" class="hidden">
+            </div>
+
+            <!-- Renk Paleti (İlk girişte rastgele atanır veya resimsiz kullanımda renk seçimi) -->
+            <div class="custom-field">
+              <div class="custom-field-title">Avatar / Profil Rengi:</div>
+              <div id="lobbyColorPalette" class="color-palette-row"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="usernameInput">Kullanıcı Adınız</label>
+            <input type="text" id="usernameInput" placeholder="Örn: Furkan" maxlength="20" required>
+          </div>
+
+          <div class="form-group">
+            <label for="statusInput">Durum Mesajınız (İsteğe Bağlı)</label>
+            <input type="text" id="statusInput" placeholder="Örn: Oyun modunda, Müzik dinliyor..." maxlength="30">
+          </div>
+
+          <div class="form-group">
+            <label for="roomInput">Oda Adı</label>
+            <div class="input-with-action">
+              <input type="text" id="roomInput" placeholder="Örn: dostlar-odasi" required>
+              <button type="button" id="btnRandomRoom" class="btn-secondary btn-sm" title="Rastgele Oda">🎲</button>
+            </div>
+          </div>
+
+          <!-- Canlı Mikrofon Testi -->
+          <div class="mic-preview-box">
+            <div class="mic-preview-header">
+              <span>🎤 Mikrofon Testi</span>
+              <span id="micTestStatus" class="status-badge">Bekleniyor...</span>
+            </div>
+            <div class="mic-meter">
+              <div id="micMeterFill" class="mic-meter-fill"></div>
+            </div>
+            <button type="button" id="btnTestMic" class="btn-secondary btn-sm full-width">Mikrofonu Test Et</button>
+          </div>
+
+          <button type="submit" id="btnJoin" class="btn-primary full-width">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+            Odaya Katıl
+          </button>
+        </form>
+
+        <div class="tech-badge">
+          <span>⚡ Opus Codec 128kbps</span>
+          <span>🔒 E2E Şifreli (WebRTC)</span>
+          <span>💸 Sıfır Sunucu Maliyeti</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE ROOM SCREEN (Ses Odası Ekranı) -->
+    <div id="roomScreen" class="screen">
+      <!-- Top Navigation -->
+      <header class="room-header">
+        <div class="room-info">
+          <div class="room-title-wrapper">
+            <span class="room-hashtag">🔊</span>
+            <h2 id="displayRoomName">Oda Adı</h2>
+          </div>
+          <div class="connection-status clickable" id="btnOpenNetStats" title="Ağ ve Veri İstatistiklerini Görüntüle">
+            <span class="status-dot online"></span>
+            <span id="connectionStateText">P2P Doğrudan Bağlı</span>
+            <span class="header-stat-divider">|</span>
+            <span class="header-ping-badge" title="Ortalama Gecikme">⚡ <span id="headerPingVal">--</span> ms</span>
+            <span class="header-stat-divider">|</span>
+            <span class="header-traffic-badge" title="Toplam Veri Transferi">
+              <span title="İndirilen Veri">⬇️ <span id="headerDownVal">0 KB</span></span>
+              <span title="Yüklenen Veri">⬆️ <span id="headerUpVal">0 KB</span></span>
+            </span>
+          </div>
+        </div>
+
+        <div class="room-actions">
+          <button id="btnCopyInvite" class="btn-secondary btn-sm" title="Oda davet bağlantısını kopyala">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+            Davet Linkini Kopyala
+          </button>
+          <button id="btnToggleChat" class="btn-secondary btn-sm chat-toggle-btn active" title="Yazılı Sohbeti Aç/Kapat (Kısayol: C)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+            </svg>
+            Sohbet
+            <span id="chatBadge" class="unread-badge hidden">0</span>
+          </button>
+          <div class="participants-badge">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+            <span id="participantCount">1 Kişi</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Room Body (Content + Chat Sidebar) -->
+      <div class="room-body">
+        <!-- Main Room Area: Screen Share Stage & Participant Cards Grid -->
+        <main class="room-content">
+          <!-- Focused Screen Share Stage (Discord Style) -->
+          <div id="screenShareStage" class="screen-stage hidden">
+            <div class="screen-stage-header">
+              <div class="screen-sharer-info">
+                <span class="live-tag">CANLI</span>
+                <span id="screenSharerName">Ekran Paylaşımı</span>
+              </div>
+              <div class="screen-stage-actions">
+                <button id="btnFullscreenScreen" class="stage-btn" title="Tam Ekran">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                  </svg>
+                </button>
+                <button id="btnCloseScreenView" class="stage-btn" title="Görünümü Gizle">&times;</button>
+              </div>
+            </div>
+            <div class="screen-video-wrapper">
+              <video id="sharedScreenVideo" autoplay playsinline></video>
+            </div>
+          </div>
+
+          <div id="peersGrid" class="peers-grid">
+            <!-- Local User Card (Sen) -->
+            <div id="localUserCard" class="user-card local-user">
+              <div class="avatar-wrapper">
+                <div id="localAvatar" class="avatar">F</div>
+                <div class="speaking-ring"></div>
+                <span id="localMuteBadge" class="mute-indicator hidden">🔇</span>
+              </div>
+              <div class="user-details">
+                <span id="localUserName" class="user-name">Sen</span>
+                <span class="user-tag">(Sen)</span>
+              </div>
+              <span id="localUserStatus" class="card-status-text">Çevrimiçi</span>
+              <!-- Card Latency & Data Stats -->
+              <div class="card-stats-row">
+                <span class="card-stat-pill ping-good">⚡ 0 ms</span>
+                <span class="card-stat-pill" id="localCardTraffic">⬆️ 0 KB</span>
+              </div>
+              <div class="voice-wave">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <!-- Remote peers will be added here dynamically -->
+          </div>
+        </main>
+
+        <!-- Right Chat Sidebar (Discord Style) -->
+        <aside id="chatSidebar" class="chat-sidebar">
+          <div class="chat-header">
+            <div class="chat-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+              </svg>
+              <span>Metin Kanalı</span>
+            </div>
+            <button id="btnCloseChat" class="stage-btn" title="Sohbeti Gizle">&times;</button>
+          </div>
+
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-welcome">
+              <div class="welcome-icon">💬</div>
+              <h4>Oda Metin Sohbeti</h4>
+              <p>Odadaki arkadaşlarınla buradan mesajlaşabilirsin.</p>
+            </div>
+          </div>
+
+          <form id="chatForm" class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Bir mesaj yazın..." maxlength="500" autocomplete="off" required>
+            <button type="submit" id="btnSendMessage" class="btn-send" title="Gönder">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </aside>
+      </div>
+
+      <!-- Bottom Control Bar (Discord Style) -->
+      <footer class="controls-bar">
+        <div class="user-profile-widget clickable" id="btnOpenProfile" title="Profilini Özelleştir (Tıkla)">
+          <div id="barAvatar" class="avatar avatar-sm">F</div>
+          <div class="profile-text">
+            <span id="barUsername" class="profile-name">Furkan</span>
+            <span class="profile-status" id="barStatusText">Çevrimiçi</span>
+          </div>
+          <span class="edit-profile-icon" title="Profili Düzenle">✏️</span>
+        </div>
+
+        <div class="media-controls">
+          <!-- Mute Mic -->
+          <button id="btnToggleMic" class="control-btn" title="Mikrofonu Kapat/Aç (Kısayol: M)">
+            <svg id="iconMicOn" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/>
+            </svg>
+            <svg id="iconMicOff" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l4.07 4.07c-1.07.62-2.3 1-3.72 1.01-2.97 0-5.46-2.05-5.91-4.81-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c1.64-.23 3.12-.95 4.31-1.99l3.41 3.41 1.27-1.27L4.27 3z"/>
+            </svg>
+            <span>Sustur</span>
+          </button>
+
+          <!-- Deafen (Kulaklık) -->
+          <button id="btnToggleDeafen" class="control-btn" title="Kulaklığı Kapat/Aç (Kısayol: D)">
+            <svg id="iconAudioOn" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z"/>
+            </svg>
+            <svg id="iconAudioOff" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 3c-4.97 0-9 4.03-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9zM3.27 2L2 3.27l20 20L23.27 22z"/>
+            </svg>
+            <span>Sağırlaştır</span>
+          </button>
+
+          <!-- Screen Share (Ekran Paylaş) -->
+          <button id="btnToggleScreen" class="control-btn" title="Ekran Paylaş (Kısayol: E)">
+            <svg id="iconScreenOff" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2H0c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2h-4zM4 5h16v11H4V5z"/>
+            </svg>
+            <svg id="iconScreenOn" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2H0c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2h-4zM4 5h16v11H4V5zm-8 4l-4-4-1.41 1.41L11.17 19H7v2h8v-2h-3.17l2.58-2.59L13 15l-1 1-1-1z"/>
+            </svg>
+            <span>Ekran Paylaş</span>
+          </button>
+
+          <!-- Network Stats (Ağ Bilgisi) -->
+          <button id="btnToggleNetStats" class="control-btn" title="Ağ ve Veri Transfer İstatistikleri">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 3C6.48 3 2 7.48 2 13c0 3.31 1.61 6.24 4.09 8.05L7.5 19.5C5.36 17.91 4 15.37 4 12.5 4 8.08 7.58 4.5 12 4.5s8 3.58 8 8c0 2.87-1.36 5.41-3.5 7l1.41 1.55C20.39 19.24 22 16.31 22 13c0-5.52-4.48-10-10-10zm-1 6v6h2V9h-2zm0 8v2h2v-2h-2z"/>
+            </svg>
+            <span>Ağ Bilgisi</span>
+          </button>
+
+          <!-- Settings -->
+          <button id="btnOpenSettings" class="control-btn" title="Ses Ayarları">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span>Ayarlar</span>
+          </button>
+
+          <!-- Leave Call -->
+          <button id="btnLeaveRoom" class="control-btn btn-danger" title="Görüşmeden Ayrıl">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/>
+            </svg>
+            <span>Ayrıl</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- PROFILE CUSTOMIZATION MODAL -->
+    <div id="profileModal" class="modal-backdrop hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="modal-title-icon">🎨</span>
+            <h3>Profil Özelleştirme</h3>
+          </div>
+          <button id="btnCloseProfile" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="profile-preview-center">
+            <div class="avatar-preview-wrapper avatar-upload-trigger" id="modalAvatarTrigger" title="Resim yüklemek için tıklayın">
+              <div id="modalAvatarPreview" class="avatar avatar-xl">F</div>
+              <div class="avatar-upload-overlay" title="Resim Yükle">📷</div>
+            </div>
+            <div class="avatar-actions-row">
+              <button type="button" id="btnModalUploadImage" class="btn-action-sm">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+                Resim Yükle
+              </button>
+              <button type="button" id="btnModalRemoveImage" class="btn-action-sm btn-danger-action hidden" title="Profil Resmini Kaldır">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                Kaldır
+              </button>
+            </div>
+            <input type="file" id="modalAvatarFile" accept="image/*" class="hidden">
+            <h4 id="modalNamePreview">Furkan</h4>
+            <span id="modalStatusPreview" class="profile-status-badge">Çevrimiçi</span>
+          </div>
+
+          <div class="form-group">
+            <label for="modalUsernameInput">Kullanıcı Adınız</label>
+            <input type="text" id="modalUsernameInput" maxlength="20" required>
+          </div>
+
+          <div class="form-group">
+            <label for="modalStatusInput">Durum Mesajınız</label>
+            <input type="text" id="modalStatusInput" maxlength="30" placeholder="Örn: Oyun modunda, Müzikte...">
+          </div>
+
+          <div class="custom-field">
+            <div class="custom-field-title">Avatar / Profil Rengi:</div>
+            <div id="modalColorPalette" class="color-palette-row"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnSaveProfile" class="btn-primary">Kaydet ve Güncelle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK STATS MODAL -->
+    <div id="netStatsModal" class="modal-backdrop hidden">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="modal-title-icon">📊</span>
+            <h3>Ağ ve Veri Transfer İstatistikleri</h3>
+          </div>
+          <button id="btnCloseNetStats" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Ortalama Ping (Gecikme)</span>
+              <span id="modalStatPing" class="stat-value ping-good">-- ms</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Anlık Ağ Hızı</span>
+              <span id="modalStatSpeed" class="stat-value">↓ 0 KB/s • ↑ 0 KB/s</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Toplam İndirilen (Download)</span>
+              <span id="modalStatDown" class="stat-value text-accent">0 KB</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Toplam Yüklenen (Upload)</span>
+              <span id="modalStatUp" class="stat-value text-accent">0 KB</span>
+            </div>
+          </div>
+
+          <div class="peer-stats-section">
+            <h4>Bağlı Kullanıcıların Gecikme & Veri Detayları</h4>
+            <div id="peerStatsList" class="peer-stats-list">
+              <div class="empty-state-muted">Henüz başka bir kullanıcı bağlı değil.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <small class="form-hint">İstatistikler WebRTC RTCPeerConnection üzerinden her saniye canlı ölçülür.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="modal-backdrop hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Ses ve İletişim Ayarları</h3>
+          <button id="btnCloseSettings" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="selectMic">Giriş Aygıtı (Mikrofon)</label>
+            <select id="selectMic" class="form-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="selectBitrate">Opus Ses Kalitesi / Bitrate</label>
+            <select id="selectBitrate" class="form-select">
+              <option value="64000">64 kbps (Standart Ses)</option>
+              <option value="128000" selected>128 kbps (Yüksek Kalite - Önerilen)</option>
+              <option value="256000">256 kbps (Stüdyo / Müzik Modu)</option>
+            </select>
+            <small class="form-hint">Opus kodeği doğrudan P2P aktarılır. 128 kbps stüdyo netliği sunar.</small>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="switch-label">
+              <input type="checkbox" id="chkEcho" checked>
+              <span class="switch-slider"></span>
+              <span>Yankı Önleme (Echo Cancellation)</span>
+            </label>
+            <label class="switch-label">
+              <input type="checkbox" id="chkNoise" checked>
+              <span class="switch-slider"></span>
+              <span>Gürültü Bastırma (Noise Suppression)</span>
+            </label>
+            <label class="switch-label">
+              <input type="checkbox" id="chkGain" checked>
+              <span class="switch-slider"></span>
+              <span>Otomatik Kazanç (Auto Gain Control)</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnSaveSettings" class="btn-primary">Kaydet ve Uygula</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast hidden"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

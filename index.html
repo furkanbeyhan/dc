@@ -2,7 +2,11 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1013">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
   <title>Sesli Sohbet - WebRTC P2P</title>
   <link rel="stylesheet" href="style.css">
   <!-- Google Fonts: Inter -->
@@ -139,13 +143,14 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
             </svg>
-            Davet Linkini Kopyala
+            <span class="btn-text-desktop">Davet Linkini Kopyala</span>
+            <span class="btn-text-mobile">Davet</span>
           </button>
           <button id="btnToggleChat" class="btn-secondary btn-sm chat-toggle-btn active" title="Yazılı Sohbeti Aç/Kapat (Kısayol: C)">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
             </svg>
-            Sohbet
+            <span class="btn-text-desktop">Sohbet</span>
             <span id="chatBadge" class="unread-badge hidden">0</span>
           </button>
           <div class="participants-badge">
@@ -178,7 +183,7 @@
               </div>
             </div>
             <div class="screen-video-wrapper">
-              <video id="sharedScreenVideo" autoplay playsinline></video>
+              <video id="sharedScreenVideo" autoplay playsinline webkit-playsinline></video>
             </div>
           </div>
 

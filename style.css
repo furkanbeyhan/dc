@@ -29,21 +29,39 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-body {
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-tertiary);
   color: var(--text-normal);
-  min-height: 100vh;
   display: flex;
   overflow: hidden;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .app-container {
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
+}
+
+.btn-text-mobile {
+  display: none;
 }
 
 /* Screens Management */
@@ -1551,5 +1569,432 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--bg-accent-hover);
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN (iOS Safari, Android Chrome & Tablets)
+========================================================= */
+@keyframes slideUpMobile {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.mobile-hide-screen-share {
+  display: none !important;
+}
+
+/* Tablet & Mobile Breakpoint (<= 768px) */
+@media (max-width: 768px) {
+  /* Prevent iOS Safari auto-zoom on inputs */
+  input, select, textarea,
+  .form-group input,
+  .form-select,
+  .chat-input-area input,
+  #usernameInput,
+  #statusInput,
+  #roomInput,
+  #modalUsernameInput,
+  #modalStatusInput,
+  #chatInput {
+    font-size: 16px !important;
+  }
+
+  /* Lobby Screen */
+  #lobbyScreen {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+
+  .lobby-card {
+    padding: 24px 18px;
+    max-width: 100%;
+    margin: auto 0;
+    gap: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+
+  .brand h1 {
+    font-size: 20px;
+  }
+
+  .profile-setup-card {
+    padding: 14px 12px;
+  }
+
+  .color-dot {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .tech-badge {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    padding-top: 10px;
+  }
+
+  /* Room Header */
+  .room-header {
+    height: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    gap: 8px;
+  }
+
+  .room-info {
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .room-title-wrapper {
+    min-width: 0;
+  }
+
+  #displayRoomName {
+    font-size: 15px;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .room-hashtag {
+    font-size: 16px;
+  }
+
+  #connectionStateText,
+  .header-traffic-badge,
+  .header-stat-divider {
+    display: none !important;
+  }
+
+  .connection-status {
+    padding: 4px 8px;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .room-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .btn-text-desktop {
+    display: none !important;
+  }
+
+  .btn-text-mobile {
+    display: inline !important;
+  }
+
+  .participants-badge {
+    padding: 5px 8px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  /* Room Content & Cards Grid */
+  .room-content {
+    padding: 12px 10px;
+  }
+
+  .screen-stage {
+    max-height: 40vh;
+    margin-bottom: 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .screen-stage-header {
+    height: 38px;
+    padding: 0 12px;
+  }
+
+  #sharedScreenVideo {
+    max-height: calc(40vh - 38px);
+  }
+
+  .peers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .user-card {
+    padding: 14px 8px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .avatar-wrapper {
+    width: 62px;
+    height: 62px;
+  }
+
+  .avatar {
+    font-size: 24px;
+  }
+
+  .user-name {
+    font-size: 14px;
+    max-width: 110px;
+  }
+
+  .card-status-text {
+    font-size: 10px;
+    max-width: 120px;
+  }
+
+  .card-stats-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .card-stat-pill {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .voice-wave {
+    height: 12px;
+  }
+
+  .voice-wave span {
+    width: 2.5px;
+  }
+
+  .peer-volume-control {
+    padding: 4px 8px;
+    gap: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Chat Sidebar as Mobile Drawer / Overlay */
+  .chat-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    border-left: none;
+    background: var(--bg-secondary);
+    animation: slideUpMobile 0.25s ease;
+  }
+
+  .chat-header {
+    height: 48px;
+    padding: 0 14px;
+  }
+
+  #btnCloseChat {
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+  }
+
+  .chat-messages {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .chat-input-area {
+    padding: 8px 10px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .chat-input-area input {
+    padding: 10px 12px;
+    height: 42px;
+  }
+
+  .btn-send {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+  }
+
+  /* Bottom Controls Bar */
+  .controls-bar {
+    height: auto;
+    min-height: 60px;
+    padding: 6px 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+    gap: 6px;
+  }
+
+  .user-profile-widget {
+    padding: 4px 6px;
+    gap: 6px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .profile-status {
+    display: none !important;
+  }
+
+  .profile-name {
+    font-size: 13px;
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .media-controls {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .control-btn {
+    padding: 0;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: var(--radius-full);
+    justify-content: center;
+  }
+
+  .control-btn span {
+    display: none !important;
+  }
+
+  .control-btn svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /* Modals as Native Mobile Bottom Sheets */
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-dialog {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-bottom: none;
+    animation: slideUpMobile 0.25s ease;
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+  }
+
+  .modal-body {
+    padding: 16px;
+    max-height: calc(90dvh - 130px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }
+
+  .modal-footer {
+    padding: 12px 18px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 10px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .peer-stat-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .peer-stat-metrics {
+    width: 100%;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .toast {
+    bottom: 80px;
+    width: 90%;
+    max-width: 340px;
+    text-align: center;
+    font-size: 12px;
+  }
+}
+
+/* Extra Small Phones (<= 400px, e.g. iPhone SE, Galaxy A-series) */
+@media (max-width: 400px) {
+  #btnCopyInvite .btn-text-mobile {
+    display: none !important;
+  }
+
+  .profile-name {
+    max-width: 48px;
+    font-size: 12px;
+  }
+
+  .control-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+  }
+
+  .control-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .peers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .avatar-wrapper {
+    width: 52px;
+    height: 52px;
+  }
+
+  .avatar {
+    font-size: 20px;
+  }
+
+  .user-name {
+    max-width: 85px;
+    font-size: 13px;
+  }
 }
 

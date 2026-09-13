@@ -515,6 +515,22 @@ function setupEventListeners() {
     }
   });
 
+  // Mobile Audio Unlock (iOS Safari Web Audio autoplay policy)
+  const unlockAudio = () => {
+    if (state.audioCtx && state.audioCtx.state === 'suspended') {
+      state.audioCtx.resume();
+    }
+  };
+  document.addEventListener('touchstart', unlockAudio, { passive: true });
+  document.addEventListener('touchend', unlockAudio, { passive: true });
+  document.addEventListener('click', unlockAudio, { passive: true });
+
+  // Mobile / Browser Screen Share Feature Check
+  const hasDisplayMedia = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
+  if (!hasDisplayMedia && dom.btnToggleScreen) {
+    dom.btnToggleScreen.classList.add('mobile-hide-screen-share');
+  }
+
   window.addEventListener('beforeunload', () => {
     cleanupCall();
   });
@@ -673,6 +689,13 @@ async function initLocalAudio() {
   state.localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
   state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (state.audioCtx.state === 'suspended') {
+    try {
+      await state.audioCtx.resume();
+    } catch (e) {
+      console.warn('AudioContext resume deferred:', e);
+    }
+  }
   const source = state.audioCtx.createMediaStreamSource(state.localStream);
   state.localAnalyser = state.audioCtx.createAnalyser();
   state.localAnalyser.fftSize = 256;
@@ -1030,6 +1053,10 @@ function handleRemoteStream(peerId, stream, call, peerName = 'Arkadaş', color =
     return;
   }
 
+  if (state.audioCtx && state.audioCtx.state === 'suspended') {
+    state.audioCtx.resume().catch(() => {});
+  }
+
   const source = state.audioCtx.createMediaStreamSource(stream);
   const gainNode = state.audioCtx.createGain();
   const analyser = state.audioCtx.createAnalyser();
@@ -1043,6 +1070,9 @@ function handleRemoteStream(peerId, stream, call, peerName = 'Arkadaş', color =
   audioEl.srcObject = stream;
   audioEl.autoplay = true;
   audioEl.muted = true;
+  audioEl.playsInline = true;
+  audioEl.setAttribute('playsinline', '');
+  audioEl.setAttribute('webkit-playsinline', '');
   document.body.appendChild(audioEl);
 
   const cardEl = createPeerCard(peerId, peerName, color, image, status, gainNode);
@@ -1427,6 +1457,11 @@ async function toggleScreenShare() {
 }
 
 async function startScreenShare() {
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+    showToast('Mobil tarayıcılarda ekran paylaşımı başlatma desteklenmiyor. Ancak paylaşılan ekranları izleyebilirsiniz.');
+    return;
+  }
+
   try {
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: {
